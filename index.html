@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Starbound Damage File Editor</title>
+<script>
+window.onError = function(msg, url, line, col, err) {
+	if(ToastModal) ToastModal.open("Critical Error", true)
+	console.error("Uncaught Error:", url, "At "+line+":"+col, err);
+	return true;
+}
+</script>
+<script src="editor_classes.js"></script>
+<script src="editor.js"></script>
+<script src="ui.js"></script>
+<script src="misc.js"></script>
+<script src="defer.js" defer></script>
+<link rel="stylesheet" href="editor.css" />
+</head>
+<body>
+<div class="body" id="main">
+	<div class="layout_main">
+		<div class="header">
+			Starbound Damage Editor
+		</div>
+		<div class="content page_width">
+			<div class="navigation" id="navigation">
+				<div class="tab_header" data-for="editor">Editor</div>
+				<div class="tab_header active" data-for="preview">Preview</div>
+				<div class="filler"></div>
+			</div>
+			<div class="tabs">
+				<div class="tab" id="editor">
+					<div class="navbar"></div>
+					<div class="tab_content">
+						Content
+					</div>
+				</div>
+				<div class="tab active" id="preview">
+					<div class="navbar"></div>
+					<div class="tab_content">
+						<pre></pre>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="footer">
+			&copy; Erina Sugino - 2023<br>
+			<a class="modern blue" href="javascript:openHelp();">Help</a>
+		</div>
+	</div>
+	
+	<div class="sidebar" id="menu">
+		<div class="bookmark" id="menu_icon" onclick="document.getElementById('menu').classList.toggle('active');">☰</div>
+		<div class="menu_content">
+			<div class="box">
+				<label class="title">Color Scheme</label>
+				<div class="darkmode_icon light"></div>
+				<label class="switch" for="darkmode" title="Switch darkmode">
+					<input type="checkbox" class="checkbox" id="darkmode" value="1" />
+					<span class="slider round"></span>
+				</label>
+				<div class="darkmode_icon dark"></div>
+			</div>
+			<hr>
+			<div class="box">
+				<button id="newProjectButton" class="modern large" type="button" title="Start new&#10;empty project">New Project</button><br>
+				<button id="importButton" class="modern large" type="button" title="Import project from&#10; .damage file">Import</button><br>
+				<button id="exportButton" class="modern large" type="button" title="Save current project&#10;as new .damage file">Export</button>
+			</div>
+			<hr>
+			<div class="box">
+				<label class="title">Output Format</label>
+				<select class="modern large" id="compressionLevel" title="Minification settings&#10;for output">
+					<option value="0" title="Human readable&#10;pretty print">Pretty</option>
+					<option value="1" title="Human readable with&#10;minified parts">Optimized</option>
+					<option value="2" title="Minified JSON without&#10;white-spaces">Production</option>
+				</select>
+			</div>
+		</div>
+	</div>
+</div>
+
+<template id="fragment_menu">
+<div>
+	<div class="row">
+		<label class="description">Kind:</label><input id="kind" type="text" class="textfield medium" placeholder="Damage kind" title="Name of the&#10;damage kind" />
+	</div>
+	<div class="row">
+		<label class="description">Effects:</label>
+		<div class="list">
+			<div class="row clickable" data-effect="organic">
+				<label class="description">Organic</label>
+			</div>
+			<div class="row clickable" data-effect="robotic">
+				<label class="description">Robotic</label>
+			</div>
+			<div class="row clickable" data-effect="wooden">
+				<label class="description">Wooden</label>
+			</div>
+			<div class="row clickable" data-effect="stone">
+				<label class="description">Stone</label>
+			</div>
+		</div>
+	</div>
+</div>
+</template>
+<template id="fragment_effect">
+<div>
+	<div class="row">
+		<label class="description">Categories:</label>
+		<div id="container" class="list">
+			<div class="row clickable" data-category="hit">
+				<label class="description">Hit</label>
+			</div>
+			<div class="row clickable" data-category="stronghit">
+				<label class="description">Stronghit</label>
+			</div>
+			<div class="row clickable" data-category="kill">
+				<label class="description">Kill</label>
+			</div>
+		</div>
+	</div>
+</div>
+</template>
+<template id="fragment_category">
+<div>
+	<div class="row">
+		<label class="description">Sounds:</label>
+		<div class="list">
+			<div id="sounds" class="sounds"></div>
+			<div class="warning">No sounds defined.</div>
+			<div class="sticky_controls"><button class="modern tiny" data-action="addSound" title="Add new sound&#10;to this category">+</button></div>
+		</div>
+	</div>
+	<div class="row">
+		<label class="description">Particles:</label>
+		<div class="list">
+			<div class="particles" id="particles"></div>
+			<div class="warning">No particles defined.</div>
+			<div class="sticky_controls"><button class="modern tiny" data-action="addParticle" title="Add new particle&#10;to this category">+</button></div>
+		</div>
+	</div>
+</div>
+</template>
+<template id="fragment_particle">
+<div>
+	<div class="row">
+		<label class="description">Type:</label>
+		<select class="modern medium" id="type" title="Particle type">
+			<option value="ember">Ember</option>
+			<option value="animated">Animated</option>
+		</select>
+	</div>
+	<div class="row hidden" id="animation_row">
+		<label class="description">Animation:</label>
+		<input type="text" class="textfield wide" id="animation" placeholder="Animation" title="Animated particle's&#10;animation file" />
+	</div>
+	<div class="row">
+		<label class="description">Size:</label>
+		<input type="number" class="textfield tiny" id="size" min="0.1" max="10.0" step="0.01" placeholder="Size" title="Particle size" />
+		<input type="checkbox" class="checkbox" id="size_enabled" data-target="size" value="1" />
+		<label class="checkbox" title="Save this parameter" for="size_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Ang. Velocity:</label>
+		<input type="number" class="textfield tiny" id="angularvelocity" step="0.01" placeholder="Vel." title="Angular velocity" />
+		<input type="checkbox" class="checkbox" id="angularvelocity_enabled" data-target="angularVelocity" value="1" />
+		<label class="checkbox" title="Save this parameter" for="angularvelocity_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Color:</label>
+		<input type="number" class="textfield tiny" id="color1" min="0" max="255" step="1" placeholder="R" title="Color - Red" />
+		<input type="number" class="textfield tiny" id="color2" min="0" max="255" step="1" placeholder="G" title="Color - Green" />
+		<input type="number" class="textfield tiny" id="color3" min="0" max="255" step="1" placeholder="B" title="Color - Blue" />
+		<input type="number" class="textfield tiny" id="color4" min="0" max="255" step="1" placeholder="A" title="Color - Alpha" />
+		<input type="checkbox" class="checkbox" id="color_enabled" data-target="color" value="1" />
+		<label class="checkbox" title="Save this parameter" for="color_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Fade:</label>
+		<input type="number" class="textfield tiny" id="fade" max="1" min="0" step="0.01" placeholder="Fade" title="Opacity of particle" />
+		<input type="checkbox" class="checkbox" id="fade_enabled" data-target="fade" value="1" />
+		<label class="checkbox" title="Save this parameter" for="fade_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Dest. Time:</label>
+		<input type="number" class="textfield tiny" id="destructiontime" step="0.1" min="0" placeholder="Dest." title="Destruction time&#10;of particle" />
+		<input type="checkbox" class="checkbox" id="destructiontime_enabled" data-target="destructionTime" value="1" />
+		<label class="checkbox" title="Save this parameter" for="destructiontime_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Dest. Action:</label>
+		<input type="text" class="textfield medium" id="destructionaction" placeholder="Dest. Action" title="Destruction action&#10;of particle" />
+		<input type="checkbox" class="checkbox" id="destructionaction_enabled" data-target="destructionAction" value="1" />
+		<label class="checkbox" title="Save this parameter" for="destructionaction_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Position:</label>
+		<input type="number" class="textfield tiny" id="position1" step="0.01" placeholder="X" title="Position - X" />
+		<input type="number" class="textfield tiny" id="position2" step="0.01" placeholder="Y" title="Position - Y" />
+		<input type="checkbox" class="checkbox" id="position_enabled" data-target="position" value="1" />
+		<label class="checkbox" title="Save this parameter" for="position_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Ini. Velocity:</label>
+		<input type="number" class="textfield tiny" id="initialvelocity1" step="0.01" placeholder="X" title="Init. Velo. - X" />
+		<input type="number" class="textfield tiny" id="initialvelocity2" step="0.01" placeholder="Y" title="Init. Velo. - Y" />
+		<input type="checkbox" class="checkbox" id="initialvelocity_enabled" data-target="initialVelocity" value="1" />
+		<label class="checkbox" title="Save this parameter" for="initialvelocity_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Fin. Velocity:</label>
+		<input type="number" class="textfield tiny" id="finalvelocity1" step="0.01" placeholder="X" title="Fin. Velo. - X" />
+		<input type="number" class="textfield tiny" id="finalvelocity2" step="0.01" placeholder="Y" title="Fin. Velo. - Y" />
+		<input type="checkbox" class="checkbox" id="finalvelocity_enabled" data-target="finalVelocity" value="1" />
+		<label class="checkbox" title="Save this parameter" for="finalvelocity_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Approach:</label>
+		<input type="number" class="textfield tiny" id="approach1" step="0.01" placeholder="X" title="Approach - X" />
+		<input type="number" class="textfield tiny" id="approach2" step="0.01" placeholder="Y" title="Approach - Y" />
+		<input type="checkbox" class="checkbox" id="approach_enabled" data-target="approach" value="1" />
+		<label class="checkbox" title="Save this parameter" for="approach_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Layer:</label>
+		<input type="text" class="textfield medium" id="layer" placeholder="Layer" title="Render layer&#10;of particle" />
+		<input type="checkbox" class="checkbox" id="layer_enabled" data-target="layer" value="1" />
+		<label class="checkbox" title="Save this parameter" for="layer_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">TTL:</label>
+		<input type="number" class="textfield medium" id="timetolive" step="0.1" min="0" placeholder="TTL" title="Time to Live&#10;of particle" />
+		<input type="checkbox" class="checkbox" id="timetolive_enabled" data-target="timeToLive" value="1" />
+		<label class="checkbox" title="Save this parameter" for="timetolive_enabled"></label>
+	</div>
+	<div class="row">
+		<label class="description">Flippable:</label>
+		<input type="checkbox" class="checkbox" id="flippable" value="1" />
+		<label class="checkbox" title="Particle flippable?" for="flippable"></label>
+	</div>
+	<div class="row">
+		<label class="description">Variance:</label>
+	</div>
+</div>
+</template>
+</body>
+</html>
