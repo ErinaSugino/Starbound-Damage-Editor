@@ -76,6 +76,8 @@ class Editor {
 		this._effects.robotic = new Effect();
 		this._effects.wooden = new Effect();
 		this._effects.stone = new Effect();
+		
+		this.#fireEvent('load');
 	}
 	
 	load(data) {
