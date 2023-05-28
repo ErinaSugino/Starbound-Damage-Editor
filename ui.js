@@ -301,6 +301,8 @@ class EditorTab extends UITab {
 		else if(action == "addParticle") this.doAddParticle();
 		else if(action == "editParticle") this.editParticle(target);
 		else if(action == "deleteParticle") this.removeParticle(target);
+		else if(action == "addVariance") this.addVariance();
+		else if(action == "deleteVariance") this.removeVariance(target);
 		return true;
 	}
 	
@@ -359,6 +361,15 @@ class EditorTab extends UITab {
 				break;
 			case 'layer': particle.layer = value; break;
 			case 'timetolive': particle.timeToLive = value; break;
+			
+			case 'var_size1': particle.setVariance('size', value); break;
+			case 'var_timeToLive1': particle.setVariance('timeToLive', value); break;
+			case 'var_initialVelocity1': case 'var_initialVelocity2':
+				particle.setVariance('initialVelocity', [
+					document.getElementById('var_initialVelocity1').value,
+					document.getElementById('var_initialVelocity2').value
+				]);
+				break;
 		}
 	}
 	
@@ -516,6 +527,16 @@ class EditorTab extends UITab {
 		}
 		
 		this._content.appendChild(clone);
+		
+		let variances = particle.variance;
+		let allowed = Particle.allowedVariance();
+		for(let i in variances) {
+			let val1 = "", val2 = "";
+			let val = variances[i];
+			if(allowed[i]) {val1 = val[0]; val2 = val[1];}
+			else val1 = val;
+			this.doAddVariance(i, val1, val2);
+		}
 	}
 	
 	addSound() {
@@ -666,5 +687,128 @@ class EditorTab extends UITab {
 		container.children[index].remove();
 		
 		for(let i = 0; i < container.children.length; i++) {container.children[i].dataset['id'] = i;}
+	}
+	
+	addVariance() {
+		let efName = this._content.children[0].dataset['efName'];
+		let cName = this._content.children[0].dataset['cName'];
+		let pIndex = this._content.children[0].dataset['pIndex'];
+		let particle = this._editor._effects[efName]._categories[cName]._particles[pIndex];
+		let variances = particle.variance;
+		let allowed = Particle.allowedVariance();
+		
+		let options = "";
+		for(let i in allowed) {
+			if(!Object.hasOwn(variances, i) && document.getElementById('var_'+i) == null) options += "<option value=\""+i+"\">"+i+"</option>";
+		}
+		
+		Modal.confirm(
+			"Add Variance",
+			"Select variance to add.<br><br><select class='modern large' id='variance'>"+options+"</select>",
+			(function() {
+				let value = document.getElementById('variance').value;
+				if(value != "" && value != null) {
+					this.checkAddVariance(value);
+					return true;
+				}
+			}).bind(this),
+			null,
+			"Add",
+			"Abort",
+			"small",
+			false
+		);
+	}
+	checkAddVariance(name = null) {
+		if(name == null) return;
+		
+		let efName = this._content.children[0].dataset['efName'];
+		let cName = this._content.children[0].dataset['cName'];
+		let pIndex = this._content.children[0].dataset['pIndex'];
+		let particle = this._editor._effects[efName]._categories[cName]._particles[pIndex];
+		
+		if(!Object.hasOwn(Particle.allowedVariance(), name)) {ToastModal.open("Invalid variance", true); return;}
+		
+		if(document.getElementById('var_'+name) != null) ToastModal.open("Variance already set", true);
+		else this.doAddVariance(name);
+	}
+	doAddVariance(name, val1 = "", val2 = "") {
+		let efName = this._content.children[0].dataset['efName'];
+		let cName = this._content.children[0].dataset['cName'];
+		let pIndex = this._content.children[0].dataset['pIndex'];
+		let particle = this._editor._effects[efName]._categories[cName]._particles[pIndex];
+		let varTypes = Particle.allowedVariance();
+		
+		let newVariance = document.createElement('div');
+		newVariance.classList.add('variance');
+		newVariance.id = "var_"+name;
+		newVariance.dataset['param'] = name;
+		
+		let cell1 = document.createElement('div');
+		cell1.classList.add('cell', 'grow');
+		let label = document.createElement('label');
+		label.classList.add('description');
+		label.innerText = name+":";
+		cell1.append(label);
+		let input = document.createElement('input');
+		input.classList.add('textfield', 'tiny');
+		input.type = "number";
+		input.step = "0.01";
+		input.placeholder = "Val 1";
+		input.title = name+" - Val 1";
+		input.id = "var_"+name+"1";
+		input.value = val1;
+		input.addEventListener('blur', this._boundHandleInput);
+		cell1.append(input);
+		if(varTypes[name]) {
+			input = document.createElement('input');
+			input.classList.add('textfield', 'tiny');
+			input.type = "number";
+			input.step = "0.01";
+			input.placeholder = "Val 2";
+			input.title = name+" - Val 2";
+			input.id = "var_"+name+"2";
+			input.value = val2;
+			input.addEventListener('blur', this._boundHandleInput);
+			cell1.append(input);
+		}
+		newVariance.append(cell1);
+		
+		let cell2 = document.createElement('div');
+		cell2.classList.add('cell', 'controls', 'hover');
+		let button = document.createElement('button');
+		button.classList.add('modern', 'tiny');
+		button.innerText = '-';
+		button.title = "Remove Variance";
+		button.dataset['action'] = "deleteVariance";
+		cell2.append(button);
+		newVariance.append(cell2);
+		
+		document.getElementById('variances').append(newVariance);
+	}
+	
+	removeVariance(elem) {
+		let name = elem.parentElement.parentElement.dataset['param'];
+		
+		Modal.confirm(
+			"Delete Variance",
+			"Are you sure you want to delete variance "+name+"?",
+			(function() {this.doRemoveVariance(name); return true;}).bind(this),
+			null,
+			"Delete",
+			"Abort",
+			"small",
+			true
+		);
+	}
+	doRemoveVariance(name) {
+		let efName = this._content.children[0].dataset['efName'];
+		let cName = this._content.children[0].dataset['cName'];
+		let pIndex = this._content.children[0].dataset['pIndex'];
+		let particle = this._editor._effects[efName]._categories[cName]._particles[pIndex];
+		
+		particle.removeVariance(name);
+		
+		document.getElementById('var_'+name).remove();
 	}
 }

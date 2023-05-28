@@ -285,7 +285,7 @@ span.json_key {color: var(--json_key_color);}
 span.json_number {color: var(--json_number_color)}
 span.json_expression {color: var(--json_expression_color)}
 
-div.sounds:not(:empty) + div.warning, div.particles:not(:empty) + div.warning {display: none;}
+div.sounds:not(:empty) + div.warning, div.particles:not(:empty) + div.warning, div.variances:not(:empty) + div.warning {display: none;}
 div.warning {text-align: center; font-weight: bold;}
 
 div.back_button {cursor: pointer; display: inline-block; width: 30px; height: 30px; line-height: 28px; text-align: center; box-sizing: border-box; border: 1px solid lightgrey; border-radius: 5px; margin-right: 15px; user-select: none; transition: background-color 0.3s ease;}
@@ -323,6 +323,12 @@ div.particle:nth-of-type(n+2) {margin-top: 5px;}
 div.particle > .cell:not(.controls) {padding: 0px 5px;}
 div.particle > .cell:nth-of-type(1) {padding-right: 10px;}
 div.particle > .cell:nth-of-type(2) {padding-right: 0px;}
+
+div.variance {display: flex; flex-direction: row; box-sizing: border-box; width: 100%;}
+div.variance:nth-of-type(n+2) {margin-top: 5px;}
+div.variance > .cell:not(.controls) {padding: 0px 5px;}
+div.variance > .cell:nth-of-type(1) {padding-right: 10px;}
+div.variance > .cell:nth-of-type(2) {padding-right: 0px;}
 
 div.sticky_controls {text-align: right; position: sticky; bottom: 0px; padding: 5px 0px; margin-top: 10px; background-color: var(--bg_color_content);}
 div.non_sticky_controls {text-align: right; padding: 5px 10px; margin-top: 10px; background-color: var(--bg_color_content);}

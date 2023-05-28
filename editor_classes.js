@@ -131,7 +131,7 @@ class Particle {
 	constructor(parameters = {}) {
 		this.#_id = IDManager.getId(this);
 		
-		this._type = "";
+		this._type = "ember";
 		this._animation = "";
 		this._size = 1.0;
 		this._angularVelocity = 0;
@@ -250,10 +250,9 @@ class Particle {
 	get flippable() {return this._flippable;}
 	set flippable(val) {this._flippable = Boolean(val);}
 	
-	/* TODO: variance */
-	static allowedVariance() {return Particle.#_allowedVariance;}
+	static allowedVariance() {return Object.assign({}, Particle.#_allowedVariance);}
 	get variance() {return Object.assign({}, this._variance);}
-	setVarience(name, val) {
+	setVariance(name, val) {
 		let allowed = Object.keys(Particle.#_allowedVariance);
 		let i = allowed.indexOf(name);
 		if(i < 0) return false;
@@ -267,7 +266,7 @@ class Particle {
 		this._variance[name] = val;
 		return true;
 	}
-	removeVarience(name) {return delete this._variance[name];}
+	removeVariance(name) {return delete this._variance[name];}
 	
 	get saveParameters() {return Object.assign({}, this._saveParameters);}
 	setSaveParameters(id, val) {
