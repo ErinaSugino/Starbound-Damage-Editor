@@ -13,9 +13,6 @@ Two: Instead of having a compiled program that you need to run, a web-applicatio
 ## Features
 The `Starbound Damage Editor` supports every feature Starbound itself accepts in a damage file, *based off of my own reverse engineering from what works in official game assets and other projects.* If there is anything not yet supported or a misunderstanding in how things work, create an [Issue](/../../issues) to let me know.
 
-Currently missing features:
-- "Variance" for particles
-
 ## Preview and Usage
 The current build can be tested and the application seen in action at [this GitHub page](https://erinasugino.github.io/Starbound-Damage-Editor/).
 Stable releases for public use can be found in the [Release section](/../../releases).
